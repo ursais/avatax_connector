@@ -32,14 +32,18 @@ class AccountTax(models.Model):
         so that the tax amount is not added to the invoice amounts.
         """
         taxes = super().compute_all(price_unit, currency, quantity, product, partner)
-        avatax_line = self.env.context.get("avatax_line")
+        avatax_result = self.env.context.get("avatax_result")  # Values from Avatax web
+        avatax_line = self.env.context.get("avatax_line")  # Values stored on line
         taxes["total_expense"] = 0
         for tax_line in taxes["taxes"]:
             tax = self.browse(tax_line["id"])
             if tax.is_expensed_tax and tax.amount:
-                amount = (
-                    avatax_line and avatax_line.tax_amt_expense or tax_line["amount"]
-                )
+                avatax_amount = None
+                if avatax_result:  # force Avatax returned amounts
+                    avatax_amount = avatax_result.get("totalTax", 0)
+                elif avatax_line:
+                    avatax_amount = avatax_line.tax_amt_expense
+                amount = avatax_amount or tax_line["amount"]
                 taxes["total_included"] = taxes["total_excluded"]
                 taxes["total_expense"] = amount
                 tax_line["amount_expense"] = amount
