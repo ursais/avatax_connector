@@ -192,6 +192,7 @@ class AvaTaxRESTService:
         vat_id=None,
         is_override=False,
         ignore_error=None,
+        log_to_record=False,
     ):
         """ Create tax request and get tax amount by customer address
             @currency_code : 'USD' is the default currency code for avalara,
@@ -287,6 +288,11 @@ class AvaTaxRESTService:
         response = self.client.create_transaction(tax_document)
         result = self.get_result(response, ignore_error=ignore_error)
         # Enrich Avatax result with Odoo tax computation
+        if log_to_record:
+            log_to_record.avatax_request_log = pprint.pformat(
+                tax_document, indent=1)
+            log_to_record.avatax_response_log = pprint.pformat(
+                result, indent=1)
         for line in result.get("lines", []):
             line["rate"] = (
                 round(sum(x["rate"] for x in line["details"]) * 100, 4)

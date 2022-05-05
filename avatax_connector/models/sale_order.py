@@ -159,6 +159,22 @@ class SaleOrder(models.Model):
     )
     tax_address = fields.Text("Tax Address Text")
     location_code = fields.Char("Location Code", help="Origin address location code")
+    avatax_request_log = fields.Text(
+        "Avatax API Request Log", readonly=True, copy=False
+    )
+    avatax_response_log = fields.Text(
+        "Avatax API Response Log", readonly=True, copy=False
+    )
+    is_logging_enable = fields.Boolean(
+        compute="_compute_is_logging_enable", string="Is Logging Enable?")
+
+    @api.depends("company_id")
+    def _compute_is_logging_enable(self):
+        for rec in self:
+            avatax_config = rec.company_id.get_avatax_config_company()
+            rec.is_logging_enable = False
+            if avatax_config and avatax_config.logging:
+                rec.is_logging_enable = True
 
     @api.onchange("order_line", "fiscal_position_id", "partner_shipping_id")
     def onchange_reset_avatax_amount(self):
@@ -325,6 +341,7 @@ class SaleOrder(models.Model):
             self.exemption_code or None,
             self.exemption_code_id.code or None,
             currency_id=self.currency_id,
+            log_to_record=self,
         )
         tax_result_lines = {int(x["lineNumber"]): x for x in tax_result["lines"]}
         for line in self.order_line:

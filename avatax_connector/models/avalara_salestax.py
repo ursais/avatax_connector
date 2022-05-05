@@ -216,6 +216,7 @@ class AvalaraSalestax(models.Model):
         is_override=None,
         currency_id=None,
         ignore_error=None,
+        log_to_record=False,
     ):
         self.ensure_one()
         avatax_config = self
@@ -297,6 +298,7 @@ class AvalaraSalestax(models.Model):
             partner.vat_id or None,
             is_override,
             ignore_error=ignore_error,
+            log_to_record=log_to_record,
         )
         return result
 
