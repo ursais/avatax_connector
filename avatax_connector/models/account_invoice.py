@@ -328,16 +328,16 @@ class AccountInvoice(models.Model):
         Try and catch block, where we can all the time commit=true and
         if there is any exception we can unvoid_transaction.
         """
-        try:
-            super(AccountInvoice, self).action_invoice_open()
-            self._avatax_compute_taxes(commit_avatax=True)
-        except:
-            doc_type = self._get_avatax_doc_type(commit=True)
-            avatax_config.void_transaction(self.number, doc_type)
-        # self._avatax_compute_taxes(commit_avatax=False)
-        # super(AccountInvoice, self).action_invoice_open()
-        # self._avatax_compute_taxes(commit_avatax=True)
-        # return True
+        # try:
+        #     super(AccountInvoice, self).action_invoice_open()
+        #     self._avatax_compute_taxes(commit_avatax=True)
+        # except:
+        #     doc_type = self._get_avatax_doc_type(commit=True)
+        #     avatax_config.void_transaction(self.number, doc_type)
+        self._avatax_compute_taxes(commit_avatax=False)
+        super(AccountInvoice, self).action_invoice_open()
+        self._avatax_compute_taxes(commit_avatax=True)
+        return True
 
     @api.multi
     def get_taxes_values(self, contact_avatax=False, commit_avatax=False):
