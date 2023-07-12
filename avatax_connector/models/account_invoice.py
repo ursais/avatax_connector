@@ -110,6 +110,22 @@ class AccountInvoice(models.Model):
     warehouse_id = fields.Many2one("stock.warehouse", "Warehouse")
     disable_tax_calculation = fields.Boolean("Disable Avatax Tax calculation")
     avatax_amount = fields.Float(digits=dp.get_precision("Sale Price"))
+    is_logging_enable = fields.Boolean(
+        compute="_compute_is_enable_logging", string="Is Logging Enable?")
+    avatax_request_log = fields.Text(
+        "Avatax API Request Log", readonly=True, copy=False
+    )
+    avatax_response_log = fields.Text(
+        "Avatax API Response Log", readonly=True, copy=False
+    )
+
+    @api.depends("company_id")
+    def _compute_is_enable_logging(self):
+        for rec in self:
+            avatax_config = rec.company_id.get_avatax_config_company()
+            rec.is_logging_enable = False
+            if avatax_config and avatax_config.logging:
+                rec.is_logging_enable = True
 
     def _compute_amount(self):
         super()._compute_amount()
@@ -198,6 +214,7 @@ class AccountInvoice(models.Model):
             is_override=self.type == "out_refund",
             currency_id=self.currency_id,
             ignore_error=300 if commit else None,
+            log_to_record=self,
         )
         # If commiting, and document exists, try unvoiding it
         # Error number 300 = GetTaxError, Expected Saved|Posted
@@ -302,6 +319,21 @@ class AccountInvoice(models.Model):
         # , to ensure correct account moves
         # We can only commit to Avatax after validating the invoice
         # , because we need the generated Invoice number
+        """
+        Reduce the call to 1 where we send (commit=True) and
+        (commit=False) we can pre-validate via odoo validation
+        checks so that all the information program can make available
+        via validation checks.
+
+        Try and catch block, where we can all the time commit=true and
+        if there is any exception we can unvoid_transaction.
+        """
+        # try:
+        #     super(AccountInvoice, self).action_invoice_open()
+        #     self._avatax_compute_taxes(commit_avatax=True)
+        # except:
+        #     doc_type = self._get_avatax_doc_type(commit=True)
+        #     avatax_config.void_transaction(self.number, doc_type)
         self._avatax_compute_taxes(commit_avatax=False)
         super(AccountInvoice, self).action_invoice_open()
         self._avatax_compute_taxes(commit_avatax=True)

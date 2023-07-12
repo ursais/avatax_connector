@@ -16,7 +16,7 @@
                     <button name="avalara_compute_taxes"
                         type="object"
                         string="Compute Taxes"
-                        attrs="{'invisible': [('state', 'in', ['done', 'cancel'])]}"
+                        attrs="{'invisible': ['|',('is_logging_enable','=',False),('state', 'in', ['done', 'cancel'])]}"
                     />
                 </button>
 		<!--
@@ -54,7 +54,16 @@
                 <field name="fiscal_position_id" position="after">
                             <field name="tax_add_id" context="{'show_address': 1}"
                                 options='{"always_reload": True}' readonly="1"/>
+                            <field name="is_logging_enable" invisible="1"/>
                 </field>
+                <notebook position="inside">
+                    <page name="avatax_page" string="Avatax Log" attrs="{'invisible':[('is_logging_enable','=',False)]}" groups="base.group_no_one">
+                        <label for="avatax_request_log" />
+                        <field name="avatax_request_log" widget="ace" />
+                        <label for="avatax_response_log" />
+                        <field name="avatax_response_log" widget="ace" />
+                    </page>
+                </notebook>
 
             </field>
         </record>
